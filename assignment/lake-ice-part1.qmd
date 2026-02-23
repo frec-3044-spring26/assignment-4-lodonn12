@@ -216,13 +216,29 @@ Slope = -0.10602,
 How comfortable are you proceeding with using this linear model for additional analysis and prediction? Why? (I am not looking for your gut answer, rather I want you to apply concepts taught in this module to justify your answer)
 
 **Answer 9:**
+I am moderately comfortable using this model for trend analysis but not for precise yearly prediction. Although the R^2 is relatively low, the slope is statistically significant and the residuals appear approximately normally distributed and centered around 0. This suggests the model captures meaningful long-term trends, even though year alone does not explain all the variability. 
+
 
 **Question 10:**
 Now plot the data for Lake Sunapee (just like above - year on x-axis vs. ice of doy on y axis) but add the line from your regression results (e.g., fit intercept and slope). You will use the [`geom_abline`](https://ggplot2.tidyverse.org/reference/geom_abline.html). 
 
 **Answer 10:**
 ```{r}
-
+ggplot(sunapee, aes(x = year, y = ice_off_doy)) +
+  geom_point() +
+  geom_line() +
+  geom_abline(
+    intercept = fit$coefficients[1],
+    slope = fit$coefficients[2],
+    color = "blue",
+    linewidth = 1
+  ) +
+  labs(
+    title = "Lake Sunapee Ice-Off with Regression Line",
+    x = "Year",
+    y = "Ice-Off Day of Year"
+  ) +
+  theme_minimal()
 ```
 
 **Question 11:**
@@ -237,8 +253,31 @@ The goal of this question is to make a forecast of the future ice-off day (with 
 **Answer 11:**
 
 ```{r}
-
+pred_2040 <- predict(fit, newdata = data.frame(year = 2040))
+pred_2040
 ```
+Prediction will be approx 102 DOY
+
+```{r}
+lower_q <- quantile(sunapee$resid, 0.05)
+upper_q <- quantile(sunapee$resid, 0.95)
+
+lower_2040 <- pred_2040 + lower_q
+upper_2040 <- pred_2040 + upper_q
+
+lower_2040
+upper_2040
+```
+Lower Bound = 87
+Upper Bound = 117
+
+```{r}
+width <- upper_2040 - lower_2040
+width
+```
+The predicted ice-off day in 2040 is approx DOY 102
+The 90% confidence interval is approx 87 to 117 DOY
+The width of the interval is about 33 days
 
 # Is the ice-off day of the year changing more quickly in more recent years at Lake Sunapee?
 
@@ -249,8 +288,52 @@ To answer this question, you need to divide the Sunapee dataset into two dataset
 Use the skills developed above to evaluate the question "Is the ice-off day of year changing more quickly in more recent years at Lake Sunapee?"
 
 **Answer 12:**
+```{r}
+# Split data
 
-Use a mix of code, figures, and text to present your analysis.  If you want to compare slopes, be sure they are on the same plot.
+early <- sunapee %>% filter(year < 1970)
+late <- sunapee %>% filter(year >= 1970)
+
+fit_early <- lm(ice_off_doy ~ year, data = early)
+fit_late <- lm(ice_off_doy ~ year, data = late)
+
+summary(fit_early)
+summary(fit_late)
+```
+```{r}
+# Comparing the slopes
+
+fit_early$coefficients[2]
+fit_late$coefficients[2]
+```
+```{r}
+# Plotting
+
+ggplot(sunapee, aes(x = year, y = ice_off_doy)) +
+  geom_point() +
+  geom_abline(
+    intercept = fit_early$coefficients[1],
+    slope = fit_early$coefficients[2],
+    color = "red",
+    linewidth = 1
+  ) +
+  geom_abline(
+    intercept = fit_late$coefficients[1],
+    slope = fit_late$coefficients[2],
+    color = "blue",
+    linewidth = 1
+  ) +
+  labs(
+    title = "comparison of early vs late period slopes",
+    x = "year",
+    y = "Ice off DOY"
+  ) +
+  theme_minimal()
+```
+BLUE = Late (>= 1970)
+RED = Early (< 1970)
+
+The slope for the later period is more negative than the early period, indicating that ice-off dates are changing more rapidly in recent decades. This suggests that warming effects have accelerated over time. Both models are statistically significant which gives further evidence to this conclusion. 
 
 # Rendering and committing
 
